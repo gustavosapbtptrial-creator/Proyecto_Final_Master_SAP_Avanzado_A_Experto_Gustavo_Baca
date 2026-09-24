@@ -1,0 +1,56 @@
+@Metadata.layer: #CORE
+@UI.createHidden: true
+@UI: {
+  headerInfo: {
+    typeName: 'History',
+    typeNamePlural: 'History',
+    title: { type: #STANDARD, value: 'HisId' }
+  },
+  presentationVariant: [{
+    sortOrder: [{ by: 'HisId', direction: #ASC }],
+    visualizations: [{ type: #AS_LINEITEM }]
+  }]
+}
+
+annotate view ZC_DT_INCT_H_327 with
+{
+  @UI.hidden: true
+  @Consumption.filter.hidden: true
+  HisUuid;
+
+  @UI.hidden: true
+  @Consumption.filter.hidden: true
+  IncUuid;
+
+  @UI.lineItem: [{ position: 10, importance: #MEDIUM }]
+  HisId;
+
+  @UI.lineItem: [{ position: 20, importance: #LOW }]
+  PreviousStatus;
+
+  @UI.lineItem: [{ position: 30, importance: #LOW }]
+  NewStatus;
+
+  @UI.lineItem: [{ position: 40, importance: #LOW }]
+  Text;
+
+  @UI.hidden: true
+  @Consumption.filter.hidden: true
+  LocalCreatedBy;
+
+  @UI.hidden: true
+  @Consumption.filter.hidden: true
+  LocalCreatedAt;
+
+  @UI.hidden: true
+  @Consumption.filter.hidden: true
+  LocalLastChangedBy;
+
+  @UI.hidden: true
+  @Consumption.filter.hidden: true
+  LocalLastChangedAt;
+
+  @UI.hidden: true
+  @Consumption.filter.hidden: true
+  LastChangedAt;
+}
