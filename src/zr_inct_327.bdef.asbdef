@@ -7,7 +7,7 @@ define behavior for ZR_INCT_327 alias Incident
   draft table zdt_inct_d_327
   lock master
   total etag LastChangedAt
-  authorization master ( none )
+  authorization master ( instance )
   etag master LocalLastChangedAt
 {
   create;
@@ -33,6 +33,8 @@ define behavior for ZR_INCT_327 alias Incident
                       Priority;
 
 determination setInitialValues on modify { create; }
+action ( features : instance, authorization : update )
+  changeStatus parameter ZA_INCT_STATUS_327 result [1] $self;
 
   draft action Edit;
   draft action Activate;
