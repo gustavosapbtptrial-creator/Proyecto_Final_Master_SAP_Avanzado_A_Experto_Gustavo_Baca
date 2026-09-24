@@ -1,3 +1,18 @@
+CLASS lsc_zr_inct_327 DEFINITION INHERITING FROM cl_abap_behavior_saver.
+
+  PROTECTED SECTION.
+
+    METHODS save_modified REDEFINITION.
+
+ENDCLASS.
+
+CLASS lsc_zr_inct_327 IMPLEMENTATION.
+
+  METHOD save_modified.
+  ENDMETHOD.
+
+ENDCLASS.
+
 CLASS lhc_incident DEFINITION INHERITING FROM cl_abap_behavior_handler.
 
   PRIVATE SECTION.

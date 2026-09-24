@@ -9,6 +9,7 @@ define behavior for ZR_INCT_327 alias Incident
   total etag LastChangedAt
   authorization master ( instance )
   etag master LocalLastChangedAt
+  with additional save with full data
 {
   create;
   update;
