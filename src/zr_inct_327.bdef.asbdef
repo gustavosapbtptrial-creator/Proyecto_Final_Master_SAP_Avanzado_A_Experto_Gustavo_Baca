@@ -40,6 +40,7 @@ define behavior for ZR_INCT_327 alias Incident
 
 determination setInitialValues on modify { create; }
 determination recordInitialHistory on save { create; }
+validation validateIncident on save { create; update; }
 action ( features : instance, authorization : update )
   changeStatus parameter ZA_INCT_STATUS_327 result [1] $self;
 
@@ -47,7 +48,10 @@ action ( features : instance, authorization : update )
   draft action Activate;
   draft action Discard;
   draft action Resume;
-  draft determine action Prepare;
+  draft determine action Prepare
+{
+  validation validateIncident;
+}
 
   mapping for zdt_inct_327
   {

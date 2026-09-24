@@ -32,6 +32,10 @@ annotate view ZC_DT_INCT_327 with
   ]
 
   @Consumption.filter.hidden: true
+  @UI.identification: [
+    { position: 90, type: #FOR_ACTION,
+      dataAction: 'changeStatus', label: 'Change Status' }
+  ]
   IncUuid;
 
   @UI.lineItem: [{ position: 10, importance: #MEDIUM }]

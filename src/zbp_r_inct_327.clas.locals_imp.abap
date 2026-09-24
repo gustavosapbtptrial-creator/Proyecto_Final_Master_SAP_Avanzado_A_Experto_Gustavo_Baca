@@ -34,6 +34,8 @@ CLASS lhc_incident DEFINITION INHERITING FROM cl_abap_behavior_handler.
 
     METHODS recordInitialHistory FOR DETERMINE ON SAVE
       IMPORTING keys FOR Incident~recordInitialHistory.
+METHODS validateIncident FOR VALIDATE ON SAVE
+  IMPORTING keys FOR Incident~validateIncident.
 
 ENDCLASS.
 
@@ -110,7 +112,7 @@ CLASS lhc_incident IMPLEMENTATION.
 
     READ ENTITIES OF ZR_INCT_327 IN LOCAL MODE
       ENTITY Incident
-        FIELDS ( Responsible )
+        FIELDS ( Responsible Status )
         WITH CORRESPONDING #( keys )
       RESULT DATA(lt_incidents)
       FAILED failed.
@@ -134,9 +136,12 @@ CLASS lhc_incident IMPLEMENTATION.
 
       ENDIF.
 
-      IF requested_authorizations-%delete = if_abap_behv=>mk-on.
-        <authorization>-%delete = if_abap_behv=>auth-allowed.
-      ENDIF.
+IF requested_authorizations-%delete = if_abap_behv=>mk-on.
+  <authorization>-%delete = COND #(
+    WHEN <incident>-Status = 'OP'
+    THEN if_abap_behv=>auth-allowed
+    ELSE if_abap_behv=>auth-unauthorized ).
+ENDIF.
 
     ENDLOOP.
 
@@ -392,6 +397,71 @@ CLASS lhc_incident IMPLEMENTATION.
         ).
 
   ENDMETHOD.
+
+METHOD validateIncident.
+
+  DATA(lv_today) = cl_abap_context_info=>get_system_date( ).
+
+  READ ENTITIES OF ZR_INCT_327 IN LOCAL MODE
+    ENTITY Incident
+      FIELDS ( Title Description Priority Status
+               CreationDate ChangedDate )
+      WITH CORRESPONDING #( keys )
+    RESULT DATA(lt_incidents).
+
+  LOOP AT lt_incidents ASSIGNING FIELD-SYMBOL(<incident>).
+
+    DATA lv_message TYPE string.
+
+    IF <incident>-Title IS INITIAL
+       OR <incident>-Description IS INITIAL
+       OR <incident>-Priority IS INITIAL
+       OR <incident>-Status IS INITIAL
+       OR <incident>-CreationDate IS INITIAL.
+
+      lv_message = 'Completa título, descripción, prioridad, estado y fecha de creación.'.
+
+    ELSEIF <incident>-Priority <> 'H'
+       AND <incident>-Priority <> 'M'
+       AND <incident>-Priority <> 'L'.
+
+      lv_message = 'La prioridad debe ser H, M o L.'.
+
+    ELSEIF <incident>-Status <> 'OP'
+       AND <incident>-Status <> 'IP'
+       AND <incident>-Status <> 'PE'
+       AND <incident>-Status <> 'CO'
+       AND <incident>-Status <> 'CL'
+       AND <incident>-Status <> 'CN'.
+
+      lv_message = 'El estado del incidente no es válido.'.
+
+    ELSEIF <incident>-CreationDate > lv_today
+       OR <incident>-ChangedDate > lv_today.
+
+      lv_message = 'No se permiten fechas futuras.'.
+
+    ELSEIF <incident>-ChangedDate < <incident>-CreationDate.
+
+      lv_message = 'La fecha de cambio no puede ser anterior a la de creación.'.
+
+    ENDIF.
+
+    IF lv_message IS NOT INITIAL.
+      APPEND VALUE #( %tky = <incident>-%tky )
+        TO failed-Incident.
+
+      APPEND VALUE #(
+        %tky = <incident>-%tky
+        %msg = new_message_with_text(
+          severity = if_abap_behv_message=>severity-error
+          text     = lv_message )
+      ) TO reported-Incident.
+    ENDIF.
+
+  ENDLOOP.
+
+ENDMETHOD.
 
 ENDCLASS.
 
