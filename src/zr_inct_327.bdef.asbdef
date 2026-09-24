@@ -20,6 +20,7 @@ define behavior for ZR_INCT_327 alias Incident
 
   field ( readonly ) IncidentId,
                      Status,
+                      CreationDate,
                      ChangedDate,
                      LocalCreatedBy,
                      LocalCreatedAt,
@@ -30,6 +31,8 @@ define behavior for ZR_INCT_327 alias Incident
   field ( mandatory ) Title,
                       Description,
                       Priority;
+
+determination setInitialValues on modify { create; }
 
   draft action Edit;
   draft action Activate;
