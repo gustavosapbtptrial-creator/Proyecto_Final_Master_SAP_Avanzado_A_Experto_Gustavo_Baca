@@ -4,6 +4,14 @@ CLASS lhc_incident DEFINITION INHERITING FROM cl_abap_behavior_handler.
 
 METHODS setInitialValues FOR DETERMINE ON MODIFY
   IMPORTING keys FOR Incident~setInitialValues.
+METHODS get_instance_features FOR INSTANCE FEATURES
+  keys REQUEST requested_features FOR Incident RESULT result.
+
+METHODS get_instance_authorizations FOR INSTANCE AUTHORIZATION
+  keys REQUEST requested_authorizations FOR Incident RESULT result.
+
+METHODS changeStatus FOR MODIFY
+  keys FOR ACTION Incident~changeStatus RESULT result.
 
 ENDCLASS.
 
@@ -39,6 +47,15 @@ METHOD setInitialValues.
       WITH lt_updates.
 
 ENDMETHOD.
+
+  METHOD get_instance_features.
+  ENDMETHOD.
+
+  METHOD get_instance_authorizations.
+  ENDMETHOD.
+
+  METHOD changeStatus.
+  ENDMETHOD.
 
 ENDCLASS.
 
