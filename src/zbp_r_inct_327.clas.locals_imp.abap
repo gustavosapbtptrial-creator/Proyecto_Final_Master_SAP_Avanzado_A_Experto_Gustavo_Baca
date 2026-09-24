@@ -120,8 +120,147 @@ IF requested_authorizations-%update = if_abap_behv=>mk-on
 
 ENDMETHOD.
 
-  METHOD changeStatus.
-  ENDMETHOD.
+METHOD changeStatus.
+
+  DATA lt_updates TYPE TABLE FOR UPDATE ZR_INCT_327.
+  DATA(lv_today) = cl_abap_context_info=>get_system_date( ).
+
+  READ ENTITIES OF ZR_INCT_327 IN LOCAL MODE
+    ENTITY Incident
+      FIELDS ( IncUuid Status Responsible )
+      WITH CORRESPONDING #( keys )
+    RESULT DATA(lt_incidents)
+    FAILED failed.
+
+  LOOP AT keys ASSIGNING FIELD-SYMBOL(<key>).
+
+    READ TABLE lt_incidents ASSIGNING FIELD-SYMBOL(<incident>)
+      WITH KEY %tky = <key>-%tky.
+
+    IF sy-subrc <> 0.
+      CONTINUE.
+    ENDIF.
+
+    DATA(lv_new_status) = <key>-%param-NewStatus.
+
+    "La acción solo aplica a incidentes ya guardados.
+    SELECT SINGLE inc_uuid
+      FROM zdt_inct_327
+      WHERE inc_uuid = @<incident>-IncUuid
+      INTO @DATA(lv_existing_uuid).
+
+    IF sy-subrc <> 0.
+      APPEND VALUE #( %tky = <key>-%tky ) TO failed-Incident.
+      APPEND VALUE #(
+        %tky = <key>-%tky
+        %msg = new_message_with_text(
+          severity = if_abap_behv_message=>severity-error
+          text     = 'Guarda el incidente antes de cambiar su estado.' )
+      ) TO reported-Incident.
+      CONTINUE.
+    ENDIF.
+
+    "Rechazar códigos que no pertenecen al catálogo.
+    IF lv_new_status <> 'OP'
+       AND lv_new_status <> 'IP'
+       AND lv_new_status <> 'PE'
+       AND lv_new_status <> 'CO'
+       AND lv_new_status <> 'CL'
+       AND lv_new_status <> 'CN'.
+
+      APPEND VALUE #( %tky = <key>-%tky ) TO failed-Incident.
+      APPEND VALUE #(
+        %tky = <key>-%tky
+        %msg = new_message_with_text(
+          severity = if_abap_behv_message=>severity-error
+          text     = 'El estado indicado no es válido.' )
+      ) TO reported-Incident.
+      CONTINUE.
+    ENDIF.
+
+    IF lv_new_status = <incident>-Status.
+      APPEND VALUE #( %tky = <key>-%tky ) TO failed-Incident.
+      APPEND VALUE #(
+        %tky = <key>-%tky
+        %msg = new_message_with_text(
+          severity = if_abap_behv_message=>severity-error
+          text     = 'El incidente ya tiene ese estado.' )
+      ) TO reported-Incident.
+      CONTINUE.
+    ENDIF.
+
+    IF <incident>-Status = 'CN'
+       OR <incident>-Status = 'CO'
+       OR <incident>-Status = 'CL'.
+
+      APPEND VALUE #( %tky = <key>-%tky ) TO failed-Incident.
+      APPEND VALUE #(
+        %tky = <key>-%tky
+        %msg = new_message_with_text(
+          severity = if_abap_behv_message=>severity-error
+          text     = 'Un incidente en estado final no puede cambiar.' )
+      ) TO reported-Incident.
+      CONTINUE.
+    ENDIF.
+
+    IF <incident>-Status = 'PE'
+       AND ( lv_new_status = 'CO' OR lv_new_status = 'CL' ).
+
+      APPEND VALUE #( %tky = <key>-%tky ) TO failed-Incident.
+      APPEND VALUE #(
+        %tky = <key>-%tky
+        %msg = new_message_with_text(
+          severity = if_abap_behv_message=>severity-error
+          text     = 'Un incidente pendiente no puede completarse ni cerrarse.' )
+      ) TO reported-Incident.
+      CONTINUE.
+    ENDIF.
+
+    IF lv_new_status = 'IP' AND <incident>-Responsible IS INITIAL.
+      APPEND VALUE #( %tky = <key>-%tky ) TO failed-Incident.
+      APPEND VALUE #(
+        %tky = <key>-%tky
+        %msg = new_message_with_text(
+          severity = if_abap_behv_message=>severity-error
+          text     = 'Asigna un responsable antes de pasar a En progreso.' )
+      ) TO reported-Incident.
+      CONTINUE.
+    ENDIF.
+
+    APPEND VALUE #(
+      %tky        = <key>-%tky
+      Status      = lv_new_status
+      ChangedDate = lv_today
+    ) TO lt_updates.
+
+  ENDLOOP.
+
+  IF lt_updates IS INITIAL.
+    RETURN.
+  ENDIF.
+
+  MODIFY ENTITIES OF ZR_INCT_327 IN LOCAL MODE
+    ENTITY Incident
+      UPDATE FIELDS ( Status ChangedDate )
+      WITH lt_updates
+    FAILED DATA(ls_update_failed)
+    REPORTED DATA(ls_update_reported).
+
+  APPEND LINES OF ls_update_failed-Incident TO failed-Incident.
+  APPEND LINES OF ls_update_reported-Incident TO reported-Incident.
+
+  READ ENTITIES OF ZR_INCT_327 IN LOCAL MODE
+    ENTITY Incident
+      ALL FIELDS WITH CORRESPONDING #( lt_updates )
+    RESULT DATA(lt_updated_incidents).
+
+  result = VALUE #(
+    FOR ls_incident IN lt_updated_incidents
+    ( %tky   = ls_incident-%tky
+      %param = ls_incident )
+  ).
+
+ENDMETHOD.
 
 ENDCLASS.
 
