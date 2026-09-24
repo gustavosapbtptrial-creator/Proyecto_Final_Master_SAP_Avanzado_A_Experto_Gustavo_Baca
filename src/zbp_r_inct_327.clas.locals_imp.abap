@@ -2,8 +2,8 @@ CLASS lhc_incident DEFINITION INHERITING FROM cl_abap_behavior_handler.
 
   PRIVATE SECTION.
 
-    METHODS setInitialValues FOR DETERMINE ON MODIFY
-      keys FOR Incident~setInitialValues.
+METHODS setInitialValues FOR DETERMINE ON MODIFY
+  IMPORTING keys FOR Incident~setInitialValues.
 
 ENDCLASS.
 
