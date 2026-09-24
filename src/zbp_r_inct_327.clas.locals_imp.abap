@@ -9,20 +9,36 @@ ENDCLASS.
 
 CLASS lhc_incident IMPLEMENTATION.
 
-  METHOD setInitialValues.
-    DATA(lv_today) = cl_abap_context_info=>get_system_date( ).
+METHOD setInitialValues.
+
+  DATA(lv_today) = cl_abap_context_info=>get_system_date( ).
+
+  SELECT MAX( incident_id )
+    FROM zdt_inct_327
+    INTO @DATA(lv_last_id).
+
+  DATA(lv_next_id) = CONV i( lv_last_id ).
+
+  DATA lt_updates TYPE TABLE FOR UPDATE ZR_INCT_327.
+
+  LOOP AT keys ASSIGNING FIELD-SYMBOL(<key>).
+    lv_next_id += 1.
+
+    APPEND VALUE #(
+      %tky         = <key>-%tky
+      IncidentId   = CONV #( lv_next_id )
+      Status       = 'OP'
+      CreationDate = lv_today
+      ChangedDate  = lv_today
+    ) TO lt_updates.
+  ENDLOOP.
 
   MODIFY ENTITIES OF ZR_INCT_327 IN LOCAL MODE
     ENTITY Incident
-      UPDATE FIELDS ( Status CreationDate ChangedDate )
-      WITH VALUE #(
-        FOR key IN keys
-        ( %tky         = key-%tky
-          Status       = 'OP'
-          CreationDate = lv_today
-          ChangedDate  = lv_today )
-      ).
-  ENDMETHOD.
+      UPDATE FIELDS ( IncidentId Status CreationDate ChangedDate )
+      WITH lt_updates.
+
+ENDMETHOD.
 
 ENDCLASS.
 
