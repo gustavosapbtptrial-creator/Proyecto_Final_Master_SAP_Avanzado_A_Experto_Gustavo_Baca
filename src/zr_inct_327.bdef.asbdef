@@ -15,6 +15,11 @@ define behavior for ZR_INCT_327 alias Incident
   update;
   delete;
 
+    side effects
+  {
+    action changeStatus affects field Status, entity _History;
+  }
+
   association _History { create; with draft; }
 
   field ( numbering : managed, readonly ) IncUuid;

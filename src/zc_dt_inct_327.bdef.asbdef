@@ -1,7 +1,7 @@
 projection;
 strict ( 2 );
 use draft;
-
+use side effects;
 define behavior for ZC_DT_INCT_327 alias Incident
 use etag
 {
