@@ -271,6 +271,82 @@ CLASS lhc_incident IMPLEMENTATION.
     APPEND LINES OF ls_update_failed-Incident TO failed-Incident.
     APPEND LINES OF ls_update_reported-Incident TO reported-Incident.
 
+    DATA lv_history_cid TYPE i.
+
+    LOOP AT lt_updates ASSIGNING FIELD-SYMBOL(<history_update>).
+
+      "No registrar un cambio si falló la actualización del incidente.
+      READ TABLE ls_update_failed-Incident TRANSPORTING NO FIELDS
+        WITH KEY %tky = <history_update>-%tky.
+      IF sy-subrc = 0.
+        CONTINUE.
+      ENDIF.
+
+      READ TABLE lt_incidents ASSIGNING FIELD-SYMBOL(<old_incident>)
+        WITH KEY %tky = <history_update>-%tky.
+      IF sy-subrc <> 0.
+        CONTINUE.
+      ENDIF.
+
+      READ TABLE keys ASSIGNING FIELD-SYMBOL(<action_key>)
+        WITH KEY %tky = <history_update>-%tky.
+      IF sy-subrc <> 0.
+        CONTINUE.
+      ENDIF.
+
+      "Leer también las filas presentes en el buffer RAP.
+      READ ENTITIES OF ZR_INCT_327 IN LOCAL MODE
+        ENTITY Incident BY \_History
+          FIELDS ( HisId )
+          WITH VALUE #( ( %tky = <history_update>-%tky ) )
+        RESULT DATA(lt_history)
+        FAILED DATA(ls_history_read_failed).
+
+      IF ls_history_read_failed IS NOT INITIAL.
+        APPEND LINES OF ls_history_read_failed-Incident
+          TO failed-Incident.
+        APPEND LINES OF ls_history_read_failed-History
+          TO failed-History.
+        CONTINUE.
+      ENDIF.
+
+      DATA(lv_next_history_id) = 1.
+      LOOP AT lt_history ASSIGNING FIELD-SYMBOL(<history>).
+        IF CONV i( <history>-HisId ) >= lv_next_history_id.
+          lv_next_history_id = CONV i( <history>-HisId ) + 1.
+        ENDIF.
+      ENDLOOP.
+
+      lv_history_cid += 1.
+
+      MODIFY ENTITIES OF ZR_INCT_327 IN LOCAL MODE
+        ENTITY Incident
+          CREATE BY \_History
+          FIELDS ( HisId PreviousStatus NewStatus Text )
+          WITH VALUE #(
+            (
+              %tky = <history_update>-%tky
+              %target = VALUE #(
+                (
+                  %cid           = |HIST{ lv_history_cid }|
+                  HisId          = CONV #( lv_next_history_id )
+                  PreviousStatus = <old_incident>-Status
+                  NewStatus      = <history_update>-Status
+                  Text           = <action_key>-%param-Observation
+                )
+              )
+            )
+          )
+        FAILED DATA(ls_history_failed)
+        REPORTED DATA(ls_history_reported).
+
+      APPEND LINES OF ls_history_failed-Incident TO failed-Incident.
+      APPEND LINES OF ls_history_failed-History TO failed-History.
+      APPEND LINES OF ls_history_reported-Incident TO reported-Incident.
+      APPEND LINES OF ls_history_reported-History TO reported-History.
+
+    ENDLOOP.
+
     READ ENTITIES OF ZR_INCT_327 IN LOCAL MODE
       ENTITY Incident
         ALL FIELDS WITH CORRESPONDING #( lt_updates )
