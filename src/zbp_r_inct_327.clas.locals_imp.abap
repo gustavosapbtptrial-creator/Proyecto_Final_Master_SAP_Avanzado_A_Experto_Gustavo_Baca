@@ -48,11 +48,77 @@ METHOD setInitialValues.
 
 ENDMETHOD.
 
-  METHOD get_instance_features.
-  ENDMETHOD.
+METHOD get_instance_features.
 
-  METHOD get_instance_authorizations.
-  ENDMETHOD.
+  READ ENTITIES OF ZR_INCT_327 IN LOCAL MODE
+    ENTITY Incident
+      FIELDS ( IncUuid Status )
+      WITH CORRESPONDING #( keys )
+    RESULT DATA(lt_incidents)
+    FAILED failed.
+
+  LOOP AT lt_incidents ASSIGNING FIELD-SYMBOL(<incident>).
+
+    "Un borrador nuevo todavía no tiene registro activo.
+    SELECT SINGLE inc_uuid
+      FROM zdt_inct_327
+      WHERE inc_uuid = @<incident>-IncUuid
+      INTO @DATA(lv_existing_uuid).
+
+    DATA(lv_exists) = xsdbool( sy-subrc = 0 ).
+
+    APPEND VALUE #(
+      %tky = <incident>-%tky
+      %action-changeStatus = COND #(
+        WHEN lv_exists = abap_true
+         AND <incident>-Status <> 'CN'
+         AND <incident>-Status <> 'CO'
+         AND <incident>-Status <> 'CL'
+        THEN if_abap_behv=>fc-o-enabled
+        ELSE if_abap_behv=>fc-o-disabled )
+    ) TO result.
+
+  ENDLOOP.
+
+ENDMETHOD.
+
+METHOD get_instance_authorizations.
+
+  DATA(lv_user) = cl_abap_context_info=>get_user_technical_name( ).
+
+  READ ENTITIES OF ZR_INCT_327 IN LOCAL MODE
+    ENTITY Incident
+      FIELDS ( Responsible )
+      WITH CORRESPONDING #( keys )
+    RESULT DATA(lt_incidents)
+    FAILED failed.
+
+  LOOP AT lt_incidents ASSIGNING FIELD-SYMBOL(<incident>).
+
+    DATA(lv_can_update) = xsdbool(
+      lv_user = 'CB9980001327'
+      OR lv_user = <incident>-Responsible ).
+
+    APPEND VALUE #( %tky = <incident>-%tky )
+      TO result ASSIGNING FIELD-SYMBOL(<authorization>).
+
+IF requested_authorizations-%update = if_abap_behv=>mk-on
+   OR requested_authorizations-%action-Edit = if_abap_behv=>mk-on.
+
+      <authorization>-%update = COND #(
+        WHEN lv_can_update = abap_true
+        THEN if_abap_behv=>auth-allowed
+        ELSE if_abap_behv=>auth-unauthorized ).
+
+    ENDIF.
+
+    IF requested_authorizations-%delete = if_abap_behv=>mk-on.
+      <authorization>-%delete = if_abap_behv=>auth-allowed.
+    ENDIF.
+
+  ENDLOOP.
+
+ENDMETHOD.
 
   METHOD changeStatus.
   ENDMETHOD.
