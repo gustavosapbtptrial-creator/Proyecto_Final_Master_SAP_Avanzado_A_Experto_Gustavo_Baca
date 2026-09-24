@@ -8,8 +8,82 @@ ENDCLASS.
 
 CLASS lsc_zr_inct_327 IMPLEMENTATION.
 
-  METHOD save_modified.
-  ENDMETHOD.
+METHOD save_modified.
+
+  LOOP AT update-Incident ASSIGNING FIELD-SYMBOL(<incident>).
+
+    DATA(lv_status_changed) = xsdbool(
+      <incident>-%control-Status = if_abap_behv=>mk-on ).
+
+    DATA(lv_details_changed) = xsdbool(
+         <incident>-%control-Title       = if_abap_behv=>mk-on
+      OR <incident>-%control-Description = if_abap_behv=>mk-on
+      OR <incident>-%control-Priority    = if_abap_behv=>mk-on
+      OR <incident>-%control-Responsible = if_abap_behv=>mk-on ).
+
+    IF lv_status_changed = abap_false
+       AND lv_details_changed = abap_false.
+      CONTINUE.
+    ENDIF.
+
+    "El guardado gestionado ya ha escrito el historial creado por
+    "recordInitialHistory o changeStatus.
+    SELECT FROM zdt_inct_h_327
+      FIELDS his_id, new_status
+      WHERE inc_uuid = @<incident>-IncUuid
+      ORDER BY his_id DESCENDING
+      INTO TABLE @DATA(lt_last_history)
+      UP TO 1 ROWS.
+
+    READ TABLE lt_last_history INDEX 1
+      INTO DATA(ls_last_history).
+    IF sy-subrc <> 0.
+      CONTINUE.
+    ENDIF.
+
+    "La acción changeStatus ya creó esta transición: no duplicarla.
+    IF lv_status_changed = abap_true
+       AND ls_last_history-new_status = <incident>-Status.
+      CONTINUE.
+    ENDIF.
+
+    DATA ls_history TYPE zdt_inct_h_327.
+
+    TRY.
+        ls_history-his_uuid =
+          cl_system_uuid=>create_uuid_x16_static( ).
+      CATCH cx_uuid_error INTO DATA(lx_uuid).
+        RAISE SHORTDUMP lx_uuid.
+    ENDTRY.
+
+    ls_history-inc_uuid = <incident>-IncUuid.
+    ls_history-his_id =
+      CONV #( CONV i( ls_last_history-his_id ) + 1 ).
+    ls_history-previous_status = ls_last_history-new_status.
+    ls_history-new_status = <incident>-Status.
+
+    IF lv_status_changed = abap_true.
+      ls_history-text = 'Status changed'.
+    ELSE.
+      ls_history-text = 'Incident updated'.
+    ENDIF.
+
+    ls_history-local_created_by =
+      cl_abap_context_info=>get_user_technical_name( ).
+    ls_history-local_last_changed_by =
+      ls_history-local_created_by.
+
+    GET TIME STAMP FIELD ls_history-local_created_at.
+    ls_history-local_last_changed_at =
+      ls_history-local_created_at.
+    ls_history-last_changed_at =
+      ls_history-local_created_at.
+
+    INSERT zdt_inct_h_327 FROM @ls_history.
+
+  ENDLOOP.
+
+ENDMETHOD.
 
 ENDCLASS.
 
