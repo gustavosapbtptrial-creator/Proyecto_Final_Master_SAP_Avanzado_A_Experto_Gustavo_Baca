@@ -1,0 +1,85 @@
+@Metadata.layer: #CORE
+@UI: {
+  headerInfo: {
+    typeName: 'Incident',
+    typeNamePlural: 'Incidents',
+    title: { type: #STANDARD, value: 'Title' }
+  },
+  presentationVariant: [{
+    sortOrder: [{ by: 'IncidentId', direction: #ASC }],
+    visualizations: [{ type: #AS_LINEITEM }]
+  }]
+}
+
+annotate view ZC_DT_INCT_327 with
+{
+  @UI.facet: [
+    {
+      id: 'IncidentDetails',
+      purpose: #STANDARD,
+      type: #IDENTIFICATION_REFERENCE,
+      label: 'Incident',
+      position: 10
+    },
+    {
+      id: 'IncidentHistory',
+      purpose: #STANDARD,
+      type: #LINEITEM_REFERENCE,
+      label: 'History',
+      position: 20,
+      targetElement: '_History'
+    }
+  ]
+
+  @Consumption.filter.hidden: true
+  IncUuid;
+
+  @UI.lineItem: [{ position: 10, importance: #MEDIUM }]
+  @UI.identification: [{ position: 10, importance: #MEDIUM }]
+  IncidentId;
+
+  @Consumption.filter.hidden: true
+  @UI.lineItem: [{ position: 20, importance: #LOW }]
+  @UI.identification: [{ position: 20, importance: #LOW }]
+  Title;
+
+  @UI.identification: [{ position: 30, importance: #LOW }]
+  Description;
+
+  @UI.selectionField: [{ position: 10 }]
+  @UI.lineItem: [{ position: 30, importance: #LOW }]
+  @UI.identification: [{ position: 40, importance: #LOW }]
+  Status;
+
+  @UI.selectionField: [{ position: 20 }]
+  @UI.lineItem: [{ position: 40, importance: #LOW }]
+  @UI.identification: [{ position: 50, importance: #LOW }]
+  Priority;
+
+  @UI.selectionField: [{ position: 30 }]
+  @UI.lineItem: [{ position: 50, importance: #LOW }]
+  @UI.identification: [{ position: 60, importance: #LOW }]
+  Responsible;
+
+  @UI.lineItem: [{ position: 60, importance: #LOW }]
+  @UI.identification: [{ position: 70, importance: #LOW }]
+  CreationDate;
+
+  @UI.identification: [{ position: 80, importance: #LOW }]
+  ChangedDate;
+
+  @Consumption.filter.hidden: true
+  LocalCreatedBy;
+
+  @Consumption.filter.hidden: true
+  LocalCreatedAt;
+
+  @Consumption.filter.hidden: true
+  LocalLastChangedBy;
+
+  @Consumption.filter.hidden: true
+  LocalLastChangedAt;
+
+  @Consumption.filter.hidden: true
+  LastChangedAt;
+}
