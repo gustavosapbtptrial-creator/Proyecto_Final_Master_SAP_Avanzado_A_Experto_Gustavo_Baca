@@ -1,0 +1,94 @@
+managed implementation in class ZBP_R_INCT_327 unique;
+strict ( 2 );
+with draft;
+
+define behavior for ZR_INCT_327 alias Incident
+  persistent table zdt_inct_327
+  draft table zdt_inct_d_327
+  lock master
+  total etag LastChangedAt
+  authorization master ( none )
+  etag master LocalLastChangedAt
+{
+  create;
+  update;
+  delete;
+
+  association _History { create; with draft; }
+
+  field ( numbering : managed, readonly ) IncUuid;
+
+  field ( readonly ) IncidentId,
+                     Status,
+                     ChangedDate,
+                     LocalCreatedBy,
+                     LocalCreatedAt,
+                     LocalLastChangedBy,
+                     LocalLastChangedAt,
+                     LastChangedAt;
+
+  field ( mandatory ) Title,
+                      Description,
+                      Priority;
+
+  draft action Edit;
+  draft action Activate;
+  draft action Discard;
+  draft action Resume;
+  draft determine action Prepare;
+
+  mapping for zdt_inct_327
+  {
+    IncUuid            = inc_uuid;
+    IncidentId         = incident_id;
+    Title              = title;
+    Description        = description;
+    Status             = status;
+    Priority           = priority;
+    Responsible        = responsible;
+    CreationDate       = creation_date;
+    ChangedDate        = changed_date;
+    LocalCreatedBy     = local_created_by;
+    LocalCreatedAt     = local_created_at;
+    LocalLastChangedBy = local_last_changed_by;
+    LocalLastChangedAt = local_last_changed_at;
+    LastChangedAt      = last_changed_at;
+  }
+}
+
+define behavior for ZR_INCT_H_327 alias History
+  persistent table zdt_inct_h_327
+  draft table zdt_inct_h_d_327
+  lock dependent by _Incident
+  authorization dependent by _Incident
+{
+  update;
+  delete;
+
+  association _Incident { with draft; }
+
+  field ( numbering : managed, readonly ) HisUuid;
+
+  field ( readonly ) IncUuid,
+                     HisId,
+                     LocalCreatedBy,
+                     LocalCreatedAt,
+                     LocalLastChangedBy,
+                     LocalLastChangedAt,
+                     LastChangedAt;
+
+  mapping for zdt_inct_h_327
+  {
+    HisUuid            = his_uuid;
+    IncUuid            = inc_uuid;
+    HisId              = his_id;
+    PreviousStatus     = previous_status;
+    NewStatus          = new_status;
+    Text               = text;
+    LocalCreatedBy     = local_created_by;
+    LocalCreatedAt     = local_created_at;
+    LocalLastChangedBy = local_last_changed_by;
+    LocalLastChangedAt = local_last_changed_at;
+    LastChangedAt      = last_changed_at;
+  }
+}
